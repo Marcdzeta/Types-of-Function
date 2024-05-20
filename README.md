@@ -13,84 +13,48 @@ Smart Contract and type of functions
 From your chosen tool, the contract owner should be able to mint tokens to a provided address and any user should 
 be able to burn and transfer tokens.
 
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-contract MyschoolToken {
-    string public username;
-    string public course;
-    uint8 public decimals;
-    uint256 public totalValue;
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-    mapping(address => uint256) public balanceOf;
-    mapping(address => mapping(address => uint256)) public allowance;
+contract MyToken is ERC20 {
+    address private _owner;
 
-    address private owner;
-
-    event Transfer(address indexed from, address indexed to, uint256 value);
-    event Approval(address indexed owner, address indexed spender, uint256 value);
-
-    constructor(string memory _username, string memory _course, uint8 _decimals, uint256 _initialSupply) {
-        username = _username;
-        course = _course;
-        decimals = _decimals;
-        totalValue = _initialSupply * 10 ** uint256(decimals);
-        balanceOf[msg.sender] = totalValue;
-        owner = msg.sender;
-        emit Transfer(address(0), msg.sender, totalValue);
+    constructor(string memory name, string memory symbol, uint256 initialSupply) ERC20(name, symbol) {
+        _mint(msg.sender, initialSupply);
+        _owner = msg.sender;
     }
-
     modifier onlyOwner() {
-        require(msg.sender == owner, "Only owner can call this function");
+        require(msg.sender == _owner, "Only owner can call this function");
         _;
     }
 
-    function transfer(address _to, uint256 _value) public returns (bool success) {
-        require(_to != address(0), "ERC20: transfer to the zero address");
-        require(balanceOf[msg.sender] >= _value, "ERC20: insufficient balance");
-        
-        balanceOf[msg.sender] -= _value;
-        balanceOf[_to] += _value;
-        emit Transfer(msg.sender, _to, _value);
+    function mint(address account, uint256 amount) public onlyOwner {
+        _mint(account, amount);
+    }
+
+    function burn(uint256 amount) public {
+        _burn(msg.sender, amount);
+    }
+
+    
+    function transfer(address recipient, uint256 amount) public override returns (bool) {
+        require(recipient != address(0), "ERC20: transfer to the zero address");
+        _transfer(_msgSender(), recipient, amount);
         return true;
     }
 
-    function approve(address _spender, uint256 _value) public returns (bool success) {
-        allowance[msg.sender][_spender] = _value;
-        emit Approval(msg.sender, _spender, _value);
-        return true;
-    }
-
-    function transferFrom(address _from, address _to, uint256 _value) public returns (bool success) {
-        require(_to != address(0), "ERC20: transfer to the zero address");
-        require(balanceOf[_from] >= _value, "ERC20: insufficient balance");
-        require(allowance[_from][msg.sender] >= _value, "ERC20: allowance exceeded");
-
-        balanceOf[_from] -= _value;
-        balanceOf[_to] += _value;
-        allowance[_from][msg.sender] -= _value;
-        emit Transfer(_from, _to, _value);
-        return true;
-    }
-
-    function mint(address _to, uint256 _value) public onlyOwner returns (bool success) {
-        totalValue += _value;
-        balanceOf[_to] += _value;
-        emit Transfer(address(0), _to, _value);
-        return true;
-    }
-
-    function burn(uint256 _value) public returns (bool success) {
-        require(balanceOf[msg.sender] >= _value, "ERC20: insufficient balance");
-
-        balanceOf[msg.sender] -= _value;
-        totalValue -= _value;
-        emit Transfer(msg.sender, address(0), _value);
+   
+    function transferFrom(address sender, address recipient, uint256 amount) public override returns (bool) {
+        require(recipient != address(0), "ERC20: transfer to the zero address");
+        _transfer(sender, recipient, amount);
+        _approve(sender, _msgSender(), allowance(sender, _msgSender()) - amount);
         return true;
     }
 }
-
+    
+        
 ## Executing Program
 To run this program, you can use Remix, an online Solidity IDE. To get started, go to the Remix website at https://remix.ethereum.org/. 
 Once you are on the Remix website, create a new file by clicking on the "+" icon in the left-hand sidebar. Save the file with a .sol extension 
